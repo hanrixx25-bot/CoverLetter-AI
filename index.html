@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CoverLetter AI — сопроводительные письма за секунды</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FAF8F4;
+    --paper: #FFFFFF;
+    --ink: #1B1730;
+    --ink-soft: #5F5A72;
+    --ink-faint: #9691A3;
+    --accent: #4B3FE0;
+    --accent-deep: #372DB0;
+    --accent-tint: #EEEBFB;
+    --line: #E7E3ED;
+    --success: #1F7A56;
+    --error: #B23A3A;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .serif { font-family: 'Source Serif 4', Georgia, serif; }
+
+  ::selection { background: var(--accent-tint); color: var(--accent-deep); }
+
+  a { color: inherit; }
+
+  .wrap {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  /* ---------- Navbar ---------- */
+  .navbar {
+    border-bottom: 1px solid var(--line);
+  }
+  .navbar .wrap {
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo {
+    font-size: 18px;
+    font-weight: 500;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--ink);
+    padding: 4px 6px;
+    border-radius: 6px;
+  }
+  .logo span { color: var(--accent); }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 999px;
+    padding: 10px 20px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    font-family: inherit;
+  }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    transition: background .15s ease, transform .1s ease;
+  }
+  .btn-primary:hover:not(:disabled) { background: var(--accent-deep); }
+  .btn-primary:active:not(:disabled) { transform: translateY(1px); }
+  .btn-primary:disabled { opacity: .55; cursor: not-allowed; }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--ink);
+    border-color: var(--line);
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .btn-secondary:hover { border-color: var(--accent); background: var(--accent-tint); }
+
+  .btn-block { width: 100%; padding: 13px 20px; }
+
+  .link-quiet {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--ink-faint);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    padding: 4px;
+  }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    padding: 72px 0 56px;
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 56px;
+    align-items: center;
+  }
+  .hero h1 {
+    font-size: 44px;
+    line-height: 1.15;
+    font-weight: 500;
+    margin: 0;
+  }
+  .hero p.lead {
+    margin: 20px 0 0;
+    font-size: 18px;
+    color: var(--ink-soft);
+    max-width: 34ch;
+  }
+  .hero-cta {
+    margin-top: 32px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .hero-cta .hint { font-size: 14px; color: var(--ink-faint); }
+
+  .rise {
+    opacity: 0;
+    transform: translateY(10px);
+    animation: rise .6s ease forwards;
+  }
+  .rise.d1 { animation-delay: .08s; }
+  .rise.d2 { animation-delay: .16s; }
+  .rise.d3 { animation-delay: .24s; }
+  .rise.d4 { animation-delay: .34s; }
+  @keyframes rise { to { opacity: 1; transform: translateY(0); } }
+  @media (prefers-reduced-motion: reduce) {
+    .rise { animation: none; opacity: 1; transform: none; }
+    .spin { animation: none !important; }
+  }
+
+  /* ---------- Letter mockup ---------- */
+  .letter-mock-wrap { position: relative; max-width: 380px; margin: 0 auto; }
+  .letter {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    position: relative;
+    padding: 30px 32px;
+  }
+  .letter::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    border-radius: 18px 18px 0 0;
+    background: var(--accent);
+  }
+  .letter-fold {
+    position: absolute;
+    top: 0; right: 0;
+    width: 26px; height: 26px;
+    background: var(--bg);
+    border-left: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    clip-path: polygon(0 0, 100% 0, 100% 100%);
+    border-radius: 0 18px 0 0;
+  }
+  .letter-mock { transform: rotate(-2deg); }
+  .letter-to { font-size: 12px; color: var(--ink-faint); margin: 0; }
+  .letter-lines { margin-top: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .letter-lines span {
+    display: block;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--line);
+  }
+  .letter-sign {
+    font-family: 'Source Serif 4', serif;
+    font-style: italic;
+    color: var(--accent-deep);
+    font-size: 18px;
+    margin: 22px 0 0;
+  }
+  .letter-badge {
+    position: absolute;
+    bottom: -16px; left: -16px;
+    width: 60px; height: 60px;
+    border-radius: 999px;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .letter-badge svg { width: 22px; height: 22px; }
+
+  /* ---------- Steps ---------- */
+  .steps {
+    padding: 0 0 88px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+  .step-card {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 24px;
+  }
+  .step-card .n {
+    font-family: 'Source Serif 4', serif;
+    font-size: 24px;
+    color: var(--accent);
+  }
+  .step-card h3 { margin: 12px 0 0; font-size: 16px; font-weight: 500; }
+  .step-card p { margin: 6px 0 0; font-size: 14px; color: var(--ink-soft); }
+
+  /* ---------- Generator page ---------- */
+  .gen-page { padding: 48px 0 24px; }
+  .gen-head h1 { font-size: 30px; margin: 0; }
+  .gen-head p { margin: 6px 0 0; font-size: 14px; color: var(--ink-soft); }
+
+  .gen-grid {
+    margin-top: 32px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    align-items: start;
+  }
+
+  .card {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+  }
+
+  .form-card { padding: 28px; }
+  .form-card h2 { margin: 0; font-size: 20px; }
+  .form-card > p.sub { margin: 6px 0 20px; font-size: 14px; color: var(--ink-soft); }
+
+  .field { margin-bottom: 18px; }
+  .field label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+  .field label .optional {
+    font-weight: 400;
+    color: var(--ink-faint);
+    margin-left: 6px;
+  }
+  .field input,
+  .field textarea {
+    width: 100%;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: none;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  .field input::placeholder,
+  .field textarea::placeholder { color: var(--ink-faint); }
+  .field input:focus,
+  .field textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-tint);
+  }
+  .field.error input,
+  .field.error textarea { border-color: var(--error); }
+  .field .err-msg {
+    display: none;
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--error);
+  }
+  .field.error .err-msg { display: block; }
+
+  .style-group { margin-bottom: 24px; }
+  .style-group > span {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+  .style-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .style-pill {
+    border: 1px solid var(--line);
+    background: var(--paper);
+    border-radius: 12px;
+    padding: 10px 12px;
+    text-align: left;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all .15s ease;
+  }
+  .style-pill:hover { border-color: var(--accent); }
+  .style-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .style-pill .t { display: block; font-size: 14px; font-weight: 500; color: var(--ink); }
+  .style-pill .h { display: block; font-size: 12px; margin-top: 2px; color: var(--ink-faint); }
+  .style-pill[aria-checked="true"] {
+    border-color: var(--accent);
+    background: var(--accent-tint);
+  }
+  .style-pill[aria-checked="true"] .t { color: var(--accent-deep); }
+
+  /* ---------- Result panel ---------- */
+  .result-sticky { position: sticky; top: 24px; }
+
+  .state-panel {
+    min-height: 380px;
+    border-radius: 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 32px;
+  }
+  .state-empty {
+    border: 1px dashed var(--line);
+    color: var(--ink-faint);
+  }
+  .state-empty p { max-width: 26ch; margin: 14px 0 0; font-size: 14px; }
+
+  .state-loading { background: var(--paper); border: 1px solid var(--line); }
+  .state-loading p { margin: 14px 0 0; font-size: 14px; color: var(--ink-soft); }
+
+  .result-card {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 30px 32px;
+    position: relative;
+  }
+  .result-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    border-radius: 18px 18px 0 0;
+    background: var(--accent);
+  }
+  .result-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .result-head h2 { margin: 0; font-size: 20px; }
+  .demo-badge {
+    font-size: 12px;
+    background: var(--accent-tint);
+    color: var(--accent-deep);
+    padding: 4px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .result-text {
+    margin: 20px 0 0;
+    font-size: 15px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    color: var(--ink);
+  }
+  .result-actions {
+    margin-top: 28px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+  }
+  .result-actions svg { width: 16px; height: 16px; }
+
+  .spin { animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---------- Footer ---------- */
+  footer {
+    border-top: 1px solid var(--line);
+    margin-top: 32px;
+  }
+  footer .wrap {
+    padding: 28px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 14px;
+    color: var(--ink-faint);
+    flex-wrap: wrap;
+  }
+
+  [hidden] { display: none !important; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 860px) {
+    .hero { grid-template-columns: 1fr; padding: 48px 0 40px; gap: 40px; }
+    .hero h1 { font-size: 34px; }
+    .steps { grid-template-columns: 1fr; padding-bottom: 56px; }
+    .gen-grid { grid-template-columns: 1fr; gap: 24px; }
+    .result-sticky { position: static; }
+    .style-options { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="navbar">
+  <div class="wrap">
+    <button class="logo" id="logoBtn" type="button">CoverLetter <span>AI</span></button>
+    <nav>
+      <button class="btn btn-primary" id="navToGenerator" type="button">Создать письмо</button>
+      <button class="btn btn-secondary" id="navToHome" type="button" hidden>На главную</button>
+    </nav>
+  </div>
+</div>
+
+<!-- ============ HOME VIEW ============ -->
+<main id="homeView">
+  <section class="wrap hero">
+    <div>
+      <h1 class="serif rise">Сопроводительное письмо за секунды, не за час.</h1>
+      <p class="lead rise d1">Опишите вакансию и свой опыт — AI соберёт из этого письмо, которое звучит как вы, а не как шаблон.</p>
+      <div class="hero-cta rise d2">
+        <button class="btn btn-primary" id="startBtn" type="button">Написать письмо</button>
+        <span class="hint">Без регистрации, бесплатно</span>
+      </div>
+    </div>
+    <div class="letter-mock-wrap rise d3">
+      <div class="letter letter-mock">
+        <div class="letter-fold"></div>
+        <p class="letter-to">Кому: Head of Design, Acme</p>
+        <div class="letter-lines">
+          <span style="width:92%"></span>
+          <span style="width:100%"></span>
+          <span style="width:78%"></span>
+          <span style="width:88%"></span>
+          <span style="width:60%"></span>
+        </div>
+        <p class="letter-sign">С уважением, Алина</p>
+      </div>
+      <div class="letter-badge rise d4">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.9L12 3z"/></svg>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap steps">
+    <div class="step-card">
+      <span class="n serif">01</span>
+      <h3>Расскажите о себе</h3>
+      <p>Вакансия, требования, опыт и образование — в простой форме.</p>
+    </div>
+    <div class="step-card">
+      <span class="n serif">02</span>
+      <h3>Выберите тон</h3>
+      <p>Профессиональный, дружелюбный или уверенный — как вам ближе.</p>
+    </div>
+    <div class="step-card">
+      <span class="n serif">03</span>
+      <h3>Получите письмо</h3>
+      <p>Готовый текст, который можно сразу скопировать и отправить.</p>
+    </div>
+  </section>
+</main>
+
+<!-- ============ GENERATOR VIEW ============ -->
+<main id="generatorView" hidden>
+  <div class="wrap gen-page">
+    <div class="gen-head">
+      <h1 class="serif">Создать письмо</h1>
+      <p>Данные формы хранятся только в этой вкладке и очищаются при обновлении страницы.</p>
+    </div>
+
+    <div class="gen-grid">
+      <!-- Form -->
+      <form class="card form-card" id="clForm" novalidate>
+        <h2 class="serif">Расскажите о вакансии и о себе</h2>
+        <p class="sub">Чем подробнее — тем точнее получится письмо.</p>
+
+        <div class="field" id="f-jobTitle">
+          <label for="jobTitle">Название вакансии</label>
+          <input id="jobTitle" type="text" placeholder="Например, Middle Frontend Developer">
+          <span class="err-msg">Укажите название вакансии</span>
+        </div>
+
+        <div class="field">
+          <label for="company">Компания <span class="optional">(необязательно)</span></label>
+          <input id="company" type="text" placeholder="Например, Acme Inc.">
+        </div>
+
+        <div class="field" id="f-requirements">
+          <label for="requirements">Требования вакансии</label>
+          <textarea id="requirements" rows="3" placeholder="Вставьте требования из вакансии или опишите своими словами"></textarea>
+          <span class="err-msg">Добавьте требования вакансии</span>
+        </div>
+
+        <div class="field" id="f-aboutMe">
+          <label for="aboutMe">Информация о себе</label>
+          <textarea id="aboutMe" rows="3" placeholder="Кто вы, чем занимаетесь сейчас, что для вас важно в работе"></textarea>
+          <span class="err-msg">Расскажите немного о себе</span>
+        </div>
+
+        <div class="field">
+          <label for="education">Образование <span class="optional">(необязательно)</span></label>
+          <input id="education" type="text" placeholder="Например, НИУ ВШЭ, факультет компьютерных наук">
+        </div>
+
+        <div class="field" id="f-experience">
+          <label for="experience">Опыт и навыки</label>
+          <textarea id="experience" rows="3" placeholder="Ключевые проекты, обязанности, инструменты и навыки"></textarea>
+          <span class="err-msg">Опишите опыт или навыки</span>
+        </div>
+
+        <div class="style-group">
+          <span>Тон письма</span>
+          <div class="style-options" id="styleOptions" role="radiogroup" aria-label="Тон письма">
+            <button type="button" class="style-pill" data-style="professional" aria-checked="true" role="radio">
+              <span class="t">Профессиональный</span>
+              <span class="h">Сдержанно и по делу</span>
+            </button>
+            <button type="button" class="style-pill" data-style="friendly" aria-checked="false" role="radio">
+              <span class="t">Дружелюбный</span>
+              <span class="h">Тепло и открыто</span>
+            </button>
+            <button type="button" class="style-pill" data-style="confident" aria-checked="false" role="radio">
+              <span class="t">Уверенный</span>
+              <span class="h">Ярко и напористо</span>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block" id="generateBtn">
+          <span id="generateBtnLabel">Сгенерировать письмо</span>
+        </button>
+      </form>
+
+      <!-- Result -->
+      <div class="result-sticky">
+        <div class="state-panel state-empty" id="stateEmpty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+          <p>Заполните форму слева — и здесь появится готовое письмо.</p>
+        </div>
+
+        <div class="state-panel state-loading" id="stateLoading" hidden>
+          <svg class="spin" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" width="28" height="28"><path d="M21 12a9 9 0 1 1-9-9"/></svg>
+          <p>Создаём ваше письмо…</p>
+        </div>
+
+        <div class="result-card" id="stateResult" hidden>
+          <div class="result-head">
+            <h2 class="serif">Ваше письмо</h2>
+            <span class="demo-badge">демо-режим</span>
+          </div>
+          <p class="result-text" id="resultText"></p>
+          <div class="result-actions">
+            <button class="btn btn-primary" id="copyBtn" type="button">
+              <svg id="copyIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              <span id="copyLabel">Скопировать</span>
+            </button>
+            <button class="btn btn-secondary" id="downloadBtn" type="button">
+  Скачать письмо
+</button>
+            <button class="btn btn-secondary" id="regenerateBtn" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg>
+              Сгенерировать заново
+            </button>
+            <button class="link-quiet" id="clearBtn" type="button">Очистить форму</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>CoverLetter AI — MVP</span>
+    <span>Демо-генерация письма, без обращения к внешнему API</span>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- View switching ---------- */
+  var homeView = document.getElementById('homeView');
+  var generatorView = document.getElementById('generatorView');
+  var navToGenerator = document.getElementById('navToGenerator');
+  var navToHome = document.getElementById('navToHome');
+  var startBtn = document.getElementById('startBtn');
+  var logoBtn = document.getElementById('logoBtn');
+
+  function showGenerator() {
+    homeView.hidden = true;
+    generatorView.hidden = false;
+    navToGenerator.hidden = true;
+    navToHome.hidden = false;
+    window.scrollTo(0, 0);
+  }
+  function showHome() {
+    generatorView.hidden = true;
+    homeView.hidden = false;
+    navToHome.hidden = true;
+    navToGenerator.hidden = false;
+    window.scrollTo(0, 0);
+  }
+
+  navToGenerator.addEventListener('click', showGenerator);
+  startBtn.addEventListener('click', showGenerator);
+  navToHome.addEventListener('click', showHome);
+  logoBtn.addEventListener('click', showHome);
+
+  /* ---------- Style selector ---------- */
+  var styleKey = 'professional';
+  var stylePills = document.querySelectorAll('.style-pill');
+  stylePills.forEach(function (pill) {
+    pill.addEventListener('click', function () {
+      styleKey = pill.getAttribute('data-style');
+      stylePills.forEach(function (p) { p.setAttribute('aria-checked', 'false'); });
+      pill.setAttribute('aria-checked', 'true');
+    });
+  });
+
+  /* ---------- Form elements ---------- */
+  var form = document.getElementById('clForm');
+  var fields = {
+    jobTitle: document.getElementById('jobTitle'),
+    company: document.getElementById('company'),
+    requirements: document.getElementById('requirements'),
+    aboutMe: document.getElementById('aboutMe'),
+    education: document.getElementById('education'),
+    experience: document.getElementById('experience')
+  };
+  var requiredFields = ['jobTitle', 'requirements', 'aboutMe', 'experience'];
+
+  function clearErrors() {
+    requiredFields.forEach(function (key) {
+      var wrap = document.getElementById('f-' + key);
+      if (wrap) wrap.classList.remove('error');
+    });
+  }
+
+  function validate() {
+    clearErrors();
+    var valid = true;
+    requiredFields.forEach(function (key) {
+      if (!fields[key].value.trim()) {
+        var wrap = document.getElementById('f-' + key);
+        if (wrap) wrap.classList.add('error');
+        valid = false;
+      }
+    });
+    return valid;
+  }
+
+  /* ---------- Demo cover-letter generation ---------- */
+  var OPENERS = {
+    professional: [
+      'Меня заинтересовала позиция {job}{company} — мой опыт и навыки хорошо соотносятся с задачами роли.',
+      'Хочу откликнуться на вакансию {job}{company}: мой профиль соответствует ключевым требованиям.'
+    ],
+    friendly: [
+      'Увидел(а) вакансию {job}{company} — и сразу захотел(а) откликнуться.',
+      'Наткнулся(лась) на вашу вакансию {job}{company} и подумал(а): это прямо про меня.'
+    ],
+    confident: [
+      'Я — именно тот кандидат, который закроет позицию {job}{company} без раскачки.',
+      'Готов(а) прямо сейчас взять на себя задачи по вакансии {job}{company} — и вот почему.'
+    ]
+  };
+
+  var CLOSINGS = {
+    professional: [
+      'Буду рад(а) обсудить детали на собеседовании.',
+      'С удовольствием отвечу на вопросы на созвоне в удобное для вас время.'
+    ],
+    friendly: [
+      'С радостью расскажу подробнее — давайте созвонимся?',
+      'Буду рад(а) познакомиться и обсудить детали при удобной возможности.'
+    ],
+    confident: [
+      'Готов(а) начать хоть завтра — жду вашего ответа.',
+      'Уверен(а), что принесу результат с первых недель — обсудим детали?'
+    ]
+  };
+
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+  function generateLetter(data) {
+    var companyPart = data.company ? ' в ' + data.company : '';
+    var opener = pick(OPENERS[styleKey])
+      .replace('{job}', data.jobTitle || 'в вашей команде')
+      .replace('{company}', companyPart);
+
+    var body = data.experience
+      ? 'Мой опыт: ' + data.experience + '. Это напрямую относится к требованиям, которые вы указали: ' + (data.requirements || 'к задачам роли') + '.'
+      : 'Требования вакансии — ' + (data.requirements || 'задачи роли') + ' — близки к тому, чем я занимался(ась) ранее.';
+
+    var about = data.aboutMe ? 'Коротко обо мне: ' + data.aboutMe + '.' : '';
+    var edu = data.education ? 'Образование: ' + data.education + '.' : '';
+    var middle = [about, edu].filter(Boolean).join(' ');
+
+    var closing = pick(CLOSINGS[styleKey]);
+
+    return [opener, body, middle, closing].filter(Boolean).join('\n\n');
+  }
+
+  /* ---------- State panels ---------- */
+  var stateEmpty = document.getElementById('stateEmpty');
+  var stateLoading = document.getElementById('stateLoading');
+  var stateResult = document.getElementById('stateResult');
+  var resultText = document.getElementById('resultText');
+  var generateBtn = document.getElementById('generateBtn');
+  var generateBtnLabel = document.getElementById('generateBtnLabel');
+
+  function showPanel(name) {
+    stateEmpty.hidden = name !== 'empty';
+    stateLoading.hidden = name !== 'loading';
+    stateResult.hidden = name !== 'result';
+  }
+
+  var lastFormData = null;
+
+  function readForm() {
+    return {
+      jobTitle: fields.jobTitle.value.trim(),
+      company: fields.company.value.trim(),
+      requirements: fields.requirements.value.trim(),
+      aboutMe: fields.aboutMe.value.trim(),
+      education: fields.education.value.trim(),
+      experience: fields.experience.value.trim()
+    };
+  }
+
+  function runGeneration(data) {
+    showPanel('loading');
+    generateBtn.disabled = true;
+    generateBtnLabel.textContent = 'Создаём ваше письмо…';
+
+    setTimeout(function () {
+      resultText.textContent = generateLetter(data);
+      showPanel('result');
+      generateBtn.disabled = false;
+      generateBtnLabel.textContent = 'Сгенерировать письмо';
+      resetCopyState();
+    }, 900);
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (!validate()) return;
+    lastFormData = readForm();
+    runGeneration(lastFormData);
+  });
+
+  /* ---------- Regenerate ---------- */
+  document.getElementById('regenerateBtn').addEventListener('click', function () {
+    if (!lastFormData || !stateLoading.hidden) return;
+    runGeneration(lastFormData);
+  });
+
+  /* ---------- Copy ---------- */
+  var copyBtn = document.getElementById('copyBtn');
+  var copyLabel = document.getElementById('copyLabel');
+  var copyIcon = document.getElementById('copyIcon');
+  var CHECK_ICON = '<polyline points="20 6 9 17 4 12"></polyline>';
+  var COPY_ICON = '<rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>';
+  var copyTimeout = null;
+
+  function resetCopyState() {
+    clearTimeout(copyTimeout);
+    copyLabel.textContent = 'Скопировать';
+    copyIcon.innerHTML = COPY_ICON;
+  }
+
+  copyBtn.addEventListener('click', function () {
+    var text = resultText.textContent;
+    if (!text) return;
+
+    function onCopied() {
+      copyLabel.textContent = 'Скопировано';
+      copyIcon.innerHTML = CHECK_ICON;
+      clearTimeout(copyTimeout);
+      copyTimeout = setTimeout(resetCopyState, 2000);
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(onCopied).catch(function () {
+        fallbackCopy(text);
+        onCopied();
+      });
+    } else {
+      fallbackCopy(text);
+      onCopied();
+    }
+  });
+  /* ---------- Download letter ---------- */
+
+var downloadBtn = document.getElementById('downloadBtn');
+
+if (downloadBtn) {
+  downloadBtn.addEventListener('click', function () {
+    var text = resultText.textContent;
+
+    if (!text) return;
+
+    var blob = new Blob([text], {
+      type: 'text/plain;charset=utf-8'
+    });
+
+    var url = URL.createObjectURL(blob);
+
+    var link = document.createElement('a');
+    link.href = url;
+    link.download = 'cover-letter.txt';
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
+  });
+}
+
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch (e) { /* ignore */ }
+    document.body.removeChild(ta);
+  }
+
+  /* ---------- Clear ---------- */
+  document.getElementById('clearBtn').addEventListener('click', function () {
+    form.reset();
+    clearErrors();
+    styleKey = 'professional';
+    stylePills.forEach(function (p) {
+      p.setAttribute('aria-checked', p.getAttribute('data-style') === 'professional' ? 'true' : 'false');
+    });
+    lastFormData = null;
+    resetCopyState();
+    showPanel('empty');
+  });
+  /* ---------- Save data to localStorage ---------- */
+
+var STORAGE_KEY = 'coverletter-ai-data';
+
+var fieldsToSave = [
+  'jobTitle',
+  'company',
+  'requirements',
+  'aboutMe',
+  'education',
+  'experience'
+];
+
+function saveData() {
+  var data = {};
+
+  fieldsToSave.forEach(function (id) {
+    var element = document.getElementById(id);
+
+    if (element) {
+      data[id] = element.value;
+    }
+  });
+
+  data.style = styleKey;
+
+  var result = document.getElementById('resultText');
+
+  if (result) {
+    data.result = result.textContent;
+  }
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function restoreData() {
+  var saved = localStorage.getItem(STORAGE_KEY);
+
+  if (!saved) return;
+
+  try {
+    var data = JSON.parse(saved);
+
+    fieldsToSave.forEach(function (id) {
+      var element = document.getElementById(id);
+
+      if (element && data[id]) {
+        element.value = data[id];
+      }
+    });
+
+    if (data.result) {
+      var result = document.getElementById('resultText');
+      var stateResult = document.getElementById('stateResult');
+      var stateEmpty = document.getElementById('stateEmpty');
+
+      if (result && stateResult && stateEmpty) {
+        result.textContent = data.result;
+        stateResult.hidden = false;
+        stateEmpty.hidden = true;
+      }
+    }
+  } catch (error) {
+    console.log('Не удалось восстановить данные');
+  }
+}
+
+/* Сохраняем данные при вводе */
+
+fieldsToSave.forEach(function (id) {
+  var element = document.getElementById(id);
+
+  if (element) {
+    element.addEventListener('input', saveData);
+    element.addEventListener('change', saveData);
+  }
+});
+
+/* Сохраняем сгенерированное письмо */
+
+var resultTextElement = document.getElementById('resultText');
+
+if (resultTextElement) {
+  var observer = new MutationObserver(function () {
+    saveData();
+  });
+
+  observer.observe(resultTextElement, {
+    childList: true,
+    characterData: true,
+    subtree: true
+  });
+}
+
+/* Очищаем сохранённые данные кнопкой "Очистить" */
+
+var clearBtnStorage = document.getElementById('clearBtn');
+
+if (clearBtnStorage) {
+  clearBtnStorage.addEventListener('click', function () {
+    localStorage.removeItem(STORAGE_KEY);
+  });
+}
+
+/* Восстанавливаем данные после открытия страницы */
+
+restoreData();
+})();
+</script>
+
+</body>
+</html>
